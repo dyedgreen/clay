@@ -82,7 +82,9 @@ export class Command<T = Record<never, never>> {
     const flags = this._allNamed.length + this._flags.length > 0
       ? " [OPTIONS]"
       : "";
-    return `USAGE:\n\t${path.join(" ") + required + optional + flags}`;
+    return `USAGE:\n\t${
+      path.join(" ") + (path.length ? " " : "") + required + optional + flags
+    }`;
   }
 
   private _fmtMissingPositional(path: string[], arg: Argument): string {
@@ -217,11 +219,14 @@ export class Command<T = Record<never, never>> {
   }
 
   help(path: string[] = []): string {
-    return [
+    const sections = [
       this.description,
       this._fmtUsage(path),
-      this._fmtOptions(),
-    ].join("\n\n").trim();
+    ];
+    if (this._allNamed.length + this._flags.length) {
+      sections.push(this._fmtOptions());
+    }
+    return sections.join("\n\n").trim();
   }
 
   parse(args: string[], skip = 0): T {
@@ -262,8 +267,6 @@ export class Command<T = Record<never, never>> {
       }
 
       // flags and named arguments
-      for (const namedArg of this._allNamed) result[namedArg.name] = null;
-      for (const flag of this._flags) result[flag.name] = false;
       outerLoop:
       for (let i = flagsStart; i < args.length; i++) {
         if (!this._allFlags.has(args[i])) {
@@ -300,6 +303,20 @@ export class Command<T = Record<never, never>> {
           const arg = this._allNamed.find((arg) => arg.name === name);
           throw new ArgumentError(this._fmtMissingNamed(arg!));
         }
+      }
+
+      // fill optional arguments flags
+      if (
+        this._optionalPositional &&
+        !Object.hasOwn(result, this._optionalPositional.name)
+      ) {
+        result[this._optionalPositional.name] = null;
+      }
+      for (const flag of this._flags) {
+        if (!Object.hasOwn(result, flag.name)) result[flag.name] = false;
+      }
+      for (const arg of this._allNamed) {
+        if (!Object.hasOwn(result, arg.name)) result[arg.name] = null;
       }
 
       return result as T;

@@ -1,6 +1,9 @@
 # Clay - Deno Command Line Parser
 
-Easily convert command line arguments to objects.
+Easily convert command line arguments to objects. Try the example:
+```bash
+$ deno run https://deno.land/x/clay/example.ts --help
+```
 
 ## Examples
 

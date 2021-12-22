@@ -47,21 +47,24 @@ export class CommandGroup<T = Record<never, never>> {
   }
 
   parse(args: string[], skip = 0): T {
-    const isHelp = Deno.args.some((arg, idx) => {
-      if (idx < skip) return false;
-      return arg === "-h" || arg === "--help";
-    });
-    const name = args[skip];
-    if (name in this._commands) {
+    if (skip >= args.length) {
+      throw new ArgumentError(this.help(args.slice(0, skip)));
+    } else if (args[skip] in this._commands) {
       return {
-        [name]: this._commands[name].parse(args, skip + 1),
+        [args[skip]]: this._commands[args[skip]].parse(args, skip + 1),
       } as unknown as T;
-    } else if (isHelp) {
-      throw new HelpError(this.help(args.slice(0, skip)));
     } else {
-      throw new ArgumentError(
-        `Unknown command ${name.replaceAll("'", "\\'")}`,
-      );
+      const isHelp = Deno.args.some((arg, idx) => {
+        if (idx < skip) return false;
+        return arg === "-h" || arg === "--help";
+      });
+      if (isHelp) {
+        throw new HelpError(this.help(args.slice(0, skip)));
+      } else {
+        throw new ArgumentError(
+          `Unknown command ${args[skip].replaceAll("'", "\\'")}`,
+        );
+      }
     }
   }
 
