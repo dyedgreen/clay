@@ -3,4 +3,4 @@ export type { ArgumentOptions, FlagOptions } from "./src/command.ts";
 
 export { Command } from "./src/command.ts";
 export { CommandGroup } from "./src/group.ts";
-export { boolean, choice, number, string } from "./src/types.ts";
+export { boolean, choice, integer, number, string } from "./src/types.ts";

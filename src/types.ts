@@ -26,6 +26,17 @@ export const number: ArgumentType<number> = Object.freeze({
   typeName: "NUMBER",
 });
 
+export const integer: ArgumentType<number> = Object.freeze({
+  parse: (raw: string): number => {
+    if (/^[-+]?\d+$/.test(raw)) {
+      return Number(raw);
+    } else {
+      throw new ArgumentError(`${escapeRawArgument(raw)} is not an integer`);
+    }
+  },
+  typeName: "INTEGER",
+});
+
 export const boolean: ArgumentType<boolean> = Object.freeze({
   parse: (raw: string): boolean => {
     const truthy = ["yes", "true", "y", "1"];
