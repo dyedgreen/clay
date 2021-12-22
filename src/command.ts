@@ -2,25 +2,25 @@ import type { ArgumentType } from "./types.ts";
 import { ArgumentError, CommandError } from "./error.ts";
 
 export interface ArgumentOptions {
-  flags?: string[];
-  description?: string;
+  readonly flags: string[];
+  readonly description?: string;
 }
 
 export interface FlagOptions {
-  aliases?: string[];
-  description?: string;
+  readonly aliases?: string[];
+  readonly description?: string;
 }
 
 interface Argument {
-  name: string;
-  description?: string;
-  type: ArgumentType<unknown>;
+  readonly name: string;
+  readonly description?: string;
+  readonly type: ArgumentType<unknown>;
 }
 
 interface Flags {
-  name: string;
-  description?: string;
-  flags: string[];
+  readonly name: string;
+  readonly description?: string;
+  readonly flags: string[];
 }
 
 export class Command<T = Record<never, never>> {
@@ -31,7 +31,7 @@ export class Command<T = Record<never, never>> {
   private _allNamed: (Argument & Flags)[];
   private _flags: Flags[];
 
-  private _requiredNamed: string[];
+  private _requiredNamed: Set<string>;
   private _allFlags: Set<string>;
 
   constructor(description: string) {
@@ -42,12 +42,37 @@ export class Command<T = Record<never, never>> {
     this._allNamed = [];
     this._flags = [];
 
-    this._requiredNamed = [];
+    this._requiredNamed = new Set();
     this._allFlags = new Set();
   }
 
+  private _fmtLeftPad(string: string, length: number): string {
+    const pad = new Array(Math.max(0, length - string.length)).fill(" ");
+    return string + pad.join("");
+  }
+
   private _fmtOptions(): string {
-    return "FIXME ... ";
+    const pairs = [];
+    for (const arg of this._allNamed) {
+      const flags = arg.flags.join(", ");
+      const required = this._requiredNamed.has(arg.name) ? " (required)" : "";
+      pairs.push([
+        `${flags} <${arg.type.typeName}>${required}`,
+        arg.description ?? "",
+      ]);
+    }
+    for (const flag of this._flags) {
+      pairs.push([flag.flags.join(", "), flag.description ?? ""]);
+    }
+    const maxLength = pairs.reduce(
+      (max, [first, _]) => Math.max(max, first.length),
+      0,
+    );
+    return `OPTIONS:\n${
+      pairs.map(([first, second]) =>
+        `\t${this._fmtLeftPad(first, maxLength)} ${second}`
+      ).join("\n")
+    }`;
   }
 
   private _fmtUsage(path: string[]): string {
@@ -60,7 +85,9 @@ export class Command<T = Record<never, never>> {
     const flags = this._allNamed.length + this._flags.length > 0
       ? " [OPTIONS]"
       : "";
-    return `USAGE:\n\t${path.join(" ") + required + optional + flags}`;
+    return `USAGE:\n\tdeno run <script> ${
+      path.join(" ") + required + optional + flags
+    }`;
   }
 
   private _fmtMissingPositional(path: string[], arg: Argument): string {
@@ -68,7 +95,7 @@ export class Command<T = Record<never, never>> {
   }
 
   private _fmtMissingNamed(arg: Argument & Flags): string {
-    return `Missing argument ${arg.flags} <${arg.type.typeName}>`;
+    return `Missing argument ${arg.flags.join(", ")} <${arg.type.typeName}>`;
   }
 
   private _fmtPositionalArgParseError(arg: Argument, error: Error): string {
@@ -80,11 +107,11 @@ export class Command<T = Record<never, never>> {
     flag: string,
     error: Error,
   ): string {
-    return `Invalid argument ${flag} <${arg.name}>: ${error.message}`;
+    return `Invalid argument ${flag} <${arg.type.typeName}>: ${error.message}`;
   }
 
-  private _fmtUnknownFlag(path: string[], arg: string): string {
-    return `Unknown flag ${arg}\n\n${this._fmtUsage(path)}`;
+  private _fmtUnknownFlag(arg: string): string {
+    return `Unknown flag ${arg}`;
   }
 
   private _normalizeFlags(flags: string[]): string[] {
@@ -138,7 +165,7 @@ export class Command<T = Record<never, never>> {
         type,
         flags,
       });
-      this._requiredNamed.push(name);
+      this._requiredNamed.add(name);
     }
     // deno-lint-ignore no-explicit-any
     return this as any;
@@ -222,23 +249,28 @@ export class Command<T = Record<never, never>> {
       flagsStart += 1;
     }
     // flags and named arguments
+    for (const namedArg of this._allNamed) result[namedArg.name] = null;
     for (const flag of this._flags) result[flag.name] = false;
     outerLoop:
     for (let i = flagsStart; i < args.length; i++) {
       if (!this._allFlags.has(args[i])) {
         throw new ArgumentError(
-          this._fmtUnknownFlag(args.slice(0, skip), args[i]),
+          this._fmtUnknownFlag(args[i]),
         );
       }
       for (const namedArg of this._allNamed) {
         if (namedArg.flags.includes(args[i])) {
-          result[namedArg.name] = this._parseValue(
-            namedArg,
-            args[i + 1],
-            args[i],
-          );
-          i += 1;
-          continue outerLoop;
+          if (i + 1 < args.length) {
+            result[namedArg.name] = this._parseValue(
+              namedArg,
+              args[i + 1],
+              args[i],
+            );
+            i += 1;
+            continue outerLoop;
+          } else {
+            throw new ArgumentError(this._fmtMissingNamed(namedArg));
+          }
         }
       }
       for (const flag of this._flags) {
@@ -258,7 +290,31 @@ export class Command<T = Record<never, never>> {
     return result as T;
   }
 
+  help(path: string[] = []): string {
+    return [
+      this.description,
+      this._fmtUsage(path),
+      this._fmtOptions(),
+    ].join("\n\n");
+  }
+
   run(): T {
-    throw new Error("TODO");
+    if (Deno.args.some((arg) => arg === "-h" || arg === "--help")) {
+      const helpBytes = new TextEncoder().encode(this.help() + "\n");
+      Deno.stdout.writeSync(helpBytes);
+      Deno.exit(0);
+    } else {
+      try {
+        return this.parse(Deno.args);
+      } catch (error) {
+        if (error instanceof ArgumentError) {
+          const errorBytes = new TextEncoder().encode(error.message + "\n");
+          Deno.stderr.writeSync(errorBytes);
+          Deno.exit(1);
+        } else {
+          throw error;
+        }
+      }
+    }
   }
 }

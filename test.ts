@@ -10,6 +10,8 @@ Deno.test("test basic functionality", () => {
     .required(string, "name")
     .optional(number, "age", { flags: ["a", "age"] });
 
+  assertEquals(cmd.help(), ``);
+
   const result = cmd.parse(["Peter", "Parker", "--age", "42"]);
   assertEquals(result, { firstName: "Peter", name: "Parker", age: 42 });
 });

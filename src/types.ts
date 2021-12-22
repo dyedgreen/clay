@@ -3,7 +3,6 @@ import { ArgumentError } from "./error.ts";
 export interface ArgumentType<T> {
   readonly parse: (raw: string) => T;
   readonly typeName: string;
-  readonly description?: string;
 }
 
 function escapeRawArgument(string: string) {
