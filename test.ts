@@ -10,7 +10,10 @@ Deno.test("test basic functionality", () => {
     .required(string, "name")
     .optional(number, "age", { flags: ["a", "age"] });
 
-  assertEquals(cmd.help(), ``);
+  assertEquals(
+    cmd.help(),
+    `A test command.\n\nUSAGE:\n\t<firstName> <name> [OPTIONS]\n\nOPTIONS:\n\t-a, --age <NUMBER>`,
+  );
 
   const result = cmd.parse(["Peter", "Parker", "--age", "42"]);
   assertEquals(result, { firstName: "Peter", name: "Parker", age: 42 });
@@ -32,7 +35,7 @@ Deno.test("test basic command groups", () => {
   const firstResult = group.parse(["first", "-n", "two"]);
   assertEquals(firstResult, { first: { number: "two" } });
 
-  const secondResult = group.parse(["second", "-name", "Peter"]);
+  const secondResult = group.parse(["second", "--name", "Peter"]);
   assertEquals(secondResult, { second: { name: "Peter" } });
 });
 

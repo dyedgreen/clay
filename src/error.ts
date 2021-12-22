@@ -1,10 +1,11 @@
+// TODO: better naming?
 export class ArgumentError extends Error {
   constructor(message: string) {
     super(message);
   }
 }
 
-export class CommandError extends Error {
+export class HelpError extends Error {
   constructor(message: string) {
     super(message);
   }

@@ -1,5 +1,6 @@
 import type { ArgumentType } from "./types.ts";
-import { ArgumentError, CommandError } from "./error.ts";
+import { ArgumentError, HelpError } from "./error.ts";
+import { leftPad } from "./fmt.ts";
 
 export interface ArgumentOptions {
   readonly flags: string[];
@@ -46,11 +47,6 @@ export class Command<T = Record<never, never>> {
     this._allFlags = new Set();
   }
 
-  private _fmtLeftPad(string: string, length: number): string {
-    const pad = new Array(Math.max(0, length - string.length)).fill(" ");
-    return string + pad.join("");
-  }
-
   private _fmtOptions(): string {
     const pairs = [];
     for (const arg of this._allNamed) {
@@ -70,8 +66,9 @@ export class Command<T = Record<never, never>> {
     );
     return `OPTIONS:\n${
       pairs.map(([first, second]) =>
-        `\t${this._fmtLeftPad(first, maxLength)} ${second}`
-      ).join("\n")
+        `\t${leftPad(first, maxLength)}  ${second}`
+      )
+        .join("\n")
     }`;
   }
 
@@ -85,9 +82,7 @@ export class Command<T = Record<never, never>> {
     const flags = this._allNamed.length + this._flags.length > 0
       ? " [OPTIONS]"
       : "";
-    return `USAGE:\n\tdeno run <script> ${
-      path.join(" ") + required + optional + flags
-    }`;
+    return `USAGE:\n\t${path.join(" ") + required + optional + flags}`;
   }
 
   private _fmtMissingPositional(path: string[], arg: Argument): string {
@@ -111,7 +106,7 @@ export class Command<T = Record<never, never>> {
   }
 
   private _fmtUnknownFlag(arg: string): string {
-    return `Unknown flag ${arg}`;
+    return `Unknown flag '${arg.replaceAll("'", "\\'")}'`;
   }
 
   private _normalizeFlags(flags: string[]): string[] {
@@ -146,7 +141,7 @@ export class Command<T = Record<never, never>> {
     if (!options?.flags?.length) {
       // positional argument
       if (this._optionalPositional != null) {
-        throw new CommandError(
+        throw new Error(
           "required positional arguments must come before optional ones",
         );
       }
@@ -179,7 +174,7 @@ export class Command<T = Record<never, never>> {
     if (!options?.flags?.length) {
       // positional argument
       if (this._optionalPositional != null) {
-        throw new CommandError(
+        throw new Error(
           "there can be at most one optional positional argument",
         );
       }
@@ -221,99 +216,110 @@ export class Command<T = Record<never, never>> {
     return this as any;
   }
 
-  parse(args: string[], skip = 0): T {
-    const result: Record<string, unknown> = {};
-    // required positional arguments
-    const endOfRequired = skip + this._requiredPositional.length;
-    for (let i = skip; i < endOfRequired; i++) {
-      const arg = this._requiredPositional[i - skip];
-      if (i >= args.length) {
-        throw new ArgumentError(
-          this._fmtMissingPositional(args.slice(0, skip), arg),
-        );
-      } else {
-        result[arg.name] = this._parseValue(arg, args[i]);
-      }
-    }
-    // optional positional argument
-    let flagsStart = endOfRequired;
-    if (
-      this._optionalPositional &&
-      args.length > endOfRequired &&
-      !this._allFlags.has(args[endOfRequired])
-    ) {
-      result[this._optionalPositional.name] = this._parseValue(
-        this._optionalPositional,
-        args[endOfRequired],
-      );
-      flagsStart += 1;
-    }
-    // flags and named arguments
-    for (const namedArg of this._allNamed) result[namedArg.name] = null;
-    for (const flag of this._flags) result[flag.name] = false;
-    outerLoop:
-    for (let i = flagsStart; i < args.length; i++) {
-      if (!this._allFlags.has(args[i])) {
-        throw new ArgumentError(
-          this._fmtUnknownFlag(args[i]),
-        );
-      }
-      for (const namedArg of this._allNamed) {
-        if (namedArg.flags.includes(args[i])) {
-          if (i + 1 < args.length) {
-            result[namedArg.name] = this._parseValue(
-              namedArg,
-              args[i + 1],
-              args[i],
-            );
-            i += 1;
-            continue outerLoop;
-          } else {
-            throw new ArgumentError(this._fmtMissingNamed(namedArg));
-          }
-        }
-      }
-      for (const flag of this._flags) {
-        if (flag.flags.includes(args[i])) {
-          result[flag.name] = true;
-          continue outerLoop;
-        }
-      }
-    }
-    // check for missing arguments
-    for (const name of this._requiredNamed) {
-      if (!Object.hasOwn(result, name)) {
-        const arg = this._allNamed.find((arg) => arg.name === name);
-        throw new ArgumentError(this._fmtMissingNamed(arg!));
-      }
-    }
-    return result as T;
-  }
-
   help(path: string[] = []): string {
     return [
       this.description,
       this._fmtUsage(path),
       this._fmtOptions(),
-    ].join("\n\n");
+    ].join("\n\n").trim();
+  }
+
+  parse(args: string[], skip = 0): T {
+    const isHelp = Deno.args.some((arg, idx) => {
+      if (idx < skip) return false;
+      return arg === "-h" || arg === "--help";
+    });
+    if (isHelp) {
+      throw new HelpError(this.help(args.slice(0, skip)));
+    } else {
+      const result: Record<string, unknown> = {};
+
+      // required positional arguments
+      const endOfRequired = skip + this._requiredPositional.length;
+      for (let i = skip; i < endOfRequired; i++) {
+        const arg = this._requiredPositional[i - skip];
+        if (i >= args.length) {
+          throw new ArgumentError(
+            this._fmtMissingPositional(args.slice(0, skip), arg),
+          );
+        } else {
+          result[arg.name] = this._parseValue(arg, args[i]);
+        }
+      }
+
+      // optional positional argument
+      let flagsStart = endOfRequired;
+      if (
+        this._optionalPositional &&
+        args.length > endOfRequired &&
+        !this._allFlags.has(args[endOfRequired])
+      ) {
+        result[this._optionalPositional.name] = this._parseValue(
+          this._optionalPositional,
+          args[endOfRequired],
+        );
+        flagsStart += 1;
+      }
+
+      // flags and named arguments
+      for (const namedArg of this._allNamed) result[namedArg.name] = null;
+      for (const flag of this._flags) result[flag.name] = false;
+      outerLoop:
+      for (let i = flagsStart; i < args.length; i++) {
+        if (!this._allFlags.has(args[i])) {
+          throw new ArgumentError(
+            this._fmtUnknownFlag(args[i]),
+          );
+        }
+        for (const namedArg of this._allNamed) {
+          if (namedArg.flags.includes(args[i])) {
+            if (i + 1 < args.length) {
+              result[namedArg.name] = this._parseValue(
+                namedArg,
+                args[i + 1],
+                args[i],
+              );
+              i += 1;
+              continue outerLoop;
+            } else {
+              throw new ArgumentError(this._fmtMissingNamed(namedArg));
+            }
+          }
+        }
+        for (const flag of this._flags) {
+          if (flag.flags.includes(args[i])) {
+            result[flag.name] = true;
+            continue outerLoop;
+          }
+        }
+      }
+
+      // check for missing arguments
+      for (const name of this._requiredNamed) {
+        if (!Object.hasOwn(result, name)) {
+          const arg = this._allNamed.find((arg) => arg.name === name);
+          throw new ArgumentError(this._fmtMissingNamed(arg!));
+        }
+      }
+
+      return result as T;
+    }
   }
 
   run(): T {
-    if (Deno.args.some((arg) => arg === "-h" || arg === "--help")) {
-      const helpBytes = new TextEncoder().encode(this.help() + "\n");
-      Deno.stdout.writeSync(helpBytes);
-      Deno.exit(0);
-    } else {
-      try {
-        return this.parse(Deno.args);
-      } catch (error) {
-        if (error instanceof ArgumentError) {
-          const errorBytes = new TextEncoder().encode(error.message + "\n");
-          Deno.stderr.writeSync(errorBytes);
-          Deno.exit(1);
-        } else {
-          throw error;
-        }
+    try {
+      return this.parse(Deno.args);
+    } catch (error) {
+      if (error instanceof ArgumentError) {
+        const errorBytes = new TextEncoder().encode(error.message + "\n");
+        Deno.stderr.writeSync(errorBytes);
+        Deno.exit(1);
+      } else if (error instanceof HelpError) {
+        const errorBytes = new TextEncoder().encode(error.message + "\n");
+        Deno.stdout.writeSync(errorBytes);
+        Deno.exit(0);
+      } else {
+        throw error;
       }
     }
   }
