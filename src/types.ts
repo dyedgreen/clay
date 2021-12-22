@@ -1,5 +1,3 @@
-import { ArgumentError } from "./error.ts";
-
 export interface ArgumentType<T> {
   readonly parse: (raw: string) => T;
   readonly typeName: string;
@@ -20,7 +18,7 @@ export const number: ArgumentType<number> = Object.freeze({
     if (!Number.isNaN(num)) {
       return num;
     } else {
-      throw new ArgumentError(`${escapeRawArgument(raw)} is not a number`);
+      throw new Error(`${escapeRawArgument(raw)} is not a number`);
     }
   },
   typeName: "NUMBER",
@@ -31,7 +29,7 @@ export const integer: ArgumentType<number> = Object.freeze({
     if (/^[-+]?\d+$/.test(raw)) {
       return Number(raw);
     } else {
-      throw new ArgumentError(`${escapeRawArgument(raw)} is not an integer`);
+      throw new Error(`${escapeRawArgument(raw)} is not an integer`);
     }
   },
   typeName: "INTEGER",
@@ -46,7 +44,7 @@ export const boolean: ArgumentType<boolean> = Object.freeze({
     } else if (falsey.includes(raw.toLowerCase())) {
       return false;
     } else {
-      throw new ArgumentError(`${escapeRawArgument(raw)} is not a boolean`);
+      throw new Error(`${escapeRawArgument(raw)} is not a boolean`);
     }
   },
   typeName: "BOOLEAN",
@@ -61,7 +59,7 @@ export const choice = function <C extends string[]>(
       if (choices.includes(raw)) {
         return raw;
       } else {
-        throw new ArgumentError(
+        throw new Error(
           `expected one of ${
             choices.map(escapeRawArgument).join(", ")
           } but received ${escapeRawArgument(raw)}`,
