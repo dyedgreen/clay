@@ -32,7 +32,7 @@ export class CommandGroup<T = Record<never, never>> {
   subcommand<Type, Name extends string>(
     name: Name,
     command: Command<Type> | CommandGroup<Type>,
-  ): CommandGroup<T | { [name in Name]: Type }> {
+  ): CommandGroup<T & { [name in Name]?: Type }> {
     this._commands[name] = command as Command<unknown>;
     // deno-lint-ignore no-explicit-any
     return this as any;
