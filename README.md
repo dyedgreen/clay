@@ -1,5 +1,6 @@
 # Clay - Deno Command Line Parser
 
+[![tests](https://github.com/dyedgreen/clay/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/dyedgreen/clay/actions/workflows/tests.yml)
 [![deno doc](https://doc.deno.land/badge.svg)](https://doc.deno.land/https://deno.land/x/clay/mod.ts)
 
 Easily convert command line arguments to objects. Try the example:
