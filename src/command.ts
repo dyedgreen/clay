@@ -3,25 +3,33 @@ import { ArgumentError, HelpError } from "./error.ts";
 import { leftPad } from "./fmt.ts";
 
 export interface ArgumentOptions {
-  // If `flags` is set, the argument is passed
-  // as a named flag, e.g. `--name value`. Otherwise,
-  // the argument will be an anonymous positional
-  // argument.
+  /**
+   * If `flags` is set, the argument is passed
+   * as a named flag, e.g. `--name value`. Otherwise,
+   * the argument will be an anonymous positional
+   * argument.
+   */
   readonly flags: string[];
 
-  // A description to display in the generated
-  // help messages.
+  /**
+   * A description to display in the generated
+   * help messages.
+   */
   readonly description?: string;
 }
 
 export interface FlagOptions {
-  // A set of aliases for the flag's `name`. If
-  // any of the aliases, or `--{name}` are passed,
-  // the flag is set to true.
+  /**
+   * A set of aliases for the flag's `name`. If
+   * any of the aliases, or `--{name}` are passed,
+   * the flag is set to true.
+   */
   readonly aliases?: string[];
 
-  // A description to display in the generated
-  // help messages.
+  /**
+   * A description to display in the generated
+   * help messages.
+   */
   readonly description?: string;
 }
 

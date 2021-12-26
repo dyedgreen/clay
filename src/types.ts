@@ -1,5 +1,21 @@
+/**
+ * A parser that can read a single argument
+ * value.
+ *
+ * Implement this interface to provide parsers
+ * for custom argument types.
+ */
 export interface ArgumentType<T> {
+  /**
+   * Function which parses a single argument. If
+   * the parsing fails, this should throw an error.
+   */
   readonly parse: (raw: string) => T;
+
+  /**
+   * Type name to use when displaying help and
+   * error messages.
+   */
   readonly typeName: string;
 }
 
