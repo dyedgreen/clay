@@ -3,12 +3,25 @@ import { ArgumentError, HelpError } from "./error.ts";
 import { leftPad } from "./fmt.ts";
 
 export interface ArgumentOptions {
+  // If `flags` is set, the argument is passed
+  // as a named flag, e.g. `--name value`. Otherwise,
+  // the argument will be an anonymous positional
+  // argument.
   readonly flags: string[];
+
+  // A description to display in the generated
+  // help messages.
   readonly description?: string;
 }
 
 export interface FlagOptions {
+  // A set of aliases for the flag's `name`. If
+  // any of the aliases, or `--{name}` are passed,
+  // the flag is set to true.
   readonly aliases?: string[];
+
+  // A description to display in the generated
+  // help messages.
   readonly description?: string;
 }
 
@@ -24,6 +37,10 @@ interface Flags {
   readonly flags: string[];
 }
 
+/**
+ * A `Command` groups a set of arguments, which
+ * can be parsed from a given command line.
+ */
 export class Command<T = Record<never, never>> {
   readonly description: string;
 
@@ -35,6 +52,10 @@ export class Command<T = Record<never, never>> {
   private _requiredNamed: Set<string>;
   private _allFlags: Set<string>;
 
+  /**
+   * Create a new `Command`. The `description` is
+   * displayed in the generated help messages.
+   */
   constructor(description: string) {
     this.description = description;
 
@@ -137,6 +158,19 @@ export class Command<T = Record<never, never>> {
     }
   }
 
+  /**
+   * Add a required argument and return the modified
+   * `Command`.
+   *
+   * The parsed argument will present at key `name`
+   * in the object returned from `parse` or `run`.
+   *
+   * # Example
+   * ```javascript
+   * const cmd = new Command()
+   *   .required(string, "name", { flags: ["n", "name"], description: "The name." });
+   * ```
+   */
   required<Type, Name extends string>(
     type: ArgumentType<Type>,
     name: Name,
@@ -170,6 +204,20 @@ export class Command<T = Record<never, never>> {
     return this as any;
   }
 
+  /**
+   * Add an optional argument and return the modified
+   * `Command`.
+   *
+   * If the optional argument was passed, it will present
+   * at key `name` in the object returned from `parse` or `run`.
+   * Otherwise, the object will not contain the key `name`.
+   *
+   * # Example
+   * ```javascript
+   * const cmd = new Command()
+   *   .optional(string, "name", { flags: ["n", "name"], description: "The name." });
+   * ```
+   */
   optional<Type, Name extends string>(
     type: ArgumentType<Type>,
     name: Name,
@@ -202,6 +250,16 @@ export class Command<T = Record<never, never>> {
     return this as any;
   }
 
+  /**
+   * Add a `boolean` flag and return the modified
+   * `Command`.
+   *
+   * # Example
+   * ```javascript
+   * const cmd = new Command()
+   *   .flag("flag", { aliases: ["f", "the-flag"], description: "The flag." });
+   * ```
+   */
   flag<Name extends string>(
     name: Name,
     options?: FlagOptions,
@@ -220,6 +278,9 @@ export class Command<T = Record<never, never>> {
     return this as any;
   }
 
+  /**
+   * Return the generated help message.
+   */
   help(path: string[] = []): string {
     const sections = [
       this.description,
@@ -231,6 +292,11 @@ export class Command<T = Record<never, never>> {
     return sections.join("\n\n").trim();
   }
 
+  /**
+   * Parse `args`, starting from `skip`. If the
+   * argument list does not match the `Command`,
+   * this throws an error.
+   */
   parse(args: string[], skip = 0): T {
     const isHelp = args.some((arg, idx) => {
       if (idx < skip) return false;
@@ -326,6 +392,24 @@ export class Command<T = Record<never, never>> {
     }
   }
 
+  /**
+   * Parse the arguments from `Deno.args`.
+   *
+   * This will print errors to `Deno.stderr`.
+   * If a `-h` or `--help` flag is provided,
+   * a help message is printed to `Deno.stdout`.
+   * This also exits the process with the appropriate
+   * return codes.
+   *
+   * # Example
+   * Typically, you would call this at the start
+   * of your program:
+   * ```javascript
+   * // obtain cmd ...
+   * const options = cmd.run();
+   * // use options ...
+   * ```
+   */
   run(): T {
     try {
       return this.parse(Deno.args);
