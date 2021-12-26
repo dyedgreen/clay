@@ -66,7 +66,9 @@ export class Command<T = Record<never, never>> {
     );
     return `OPTIONS:\n${
       pairs.map(([first, second]) =>
-        `\t${leftPad(first, maxLength)}  ${second}`
+        second.length
+          ? `\t${leftPad(first, maxLength)}  ${second}`
+          : `\t${first}`
       )
         .join("\n")
     }`;

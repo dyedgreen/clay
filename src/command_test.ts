@@ -42,7 +42,7 @@ USAGE:
 
 OPTIONS:
 \t-a, --age <NUMBER>                The age option.
-\t-i, --index <INTEGER> (required)  
+\t-i, --index <INTEGER> (required)
 \t-o, --other <STRING>              Other option.
 \t--flag, -f, --a-flag              This is a flag.`,
   );
@@ -56,7 +56,7 @@ USAGE:
 
 OPTIONS:
 \t-a, --age <NUMBER>                The age option.
-\t-i, --index <INTEGER> (required)  
+\t-i, --index <INTEGER> (required)
 \t-o, --other <STRING>              Other option.
 \t--flag, -f, --a-flag              This is a flag.`,
   );
@@ -76,7 +76,7 @@ USAGE:
 
 OPTIONS:
 \t-a, --age <NUMBER>                The age option.
-\t-i, --index <INTEGER> (required)  
+\t-i, --index <INTEGER> (required)
 \t-o, --other <STRING>              Other option.
 \t--flag, -f, --a-flag              This is a flag.`,
   );
