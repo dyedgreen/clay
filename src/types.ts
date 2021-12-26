@@ -14,8 +14,9 @@ export const string: ArgumentType<string> = Object.freeze({
 
 export const number: ArgumentType<number> = Object.freeze({
   parse: (raw: string): number => {
-    const num = Number(raw);
-    if (!Number.isNaN(num)) {
+    const value = raw.trim();
+    const num = Number(value);
+    if (value.length > 0 && !Number.isNaN(num)) {
       return num;
     } else {
       throw new Error(`${escapeRawArgument(raw)} is not a number`);
@@ -26,8 +27,11 @@ export const number: ArgumentType<number> = Object.freeze({
 
 export const integer: ArgumentType<number> = Object.freeze({
   parse: (raw: string): number => {
-    if (/^[-+]?\d+$/.test(raw)) {
-      return Number(raw);
+    const value = raw.trim();
+    if (/^[-+]?\d+$/.test(value)) {
+      const number = Number(value);
+      if (number === -0) return 0;
+      else return number;
     } else {
       throw new Error(`${escapeRawArgument(raw)} is not an integer`);
     }
@@ -39,9 +43,10 @@ export const boolean: ArgumentType<boolean> = Object.freeze({
   parse: (raw: string): boolean => {
     const truthy = ["yes", "true", "y", "1"];
     const falsey = ["no", "false", "n", "0"];
-    if (truthy.includes(raw.toLowerCase())) {
+    const value = raw.trim().toLowerCase();
+    if (truthy.includes(value)) {
       return true;
-    } else if (falsey.includes(raw.toLowerCase())) {
+    } else if (falsey.includes(value)) {
       return false;
     } else {
       throw new Error(`${escapeRawArgument(raw)} is not a boolean`);
@@ -54,10 +59,15 @@ export const choice = function <C extends string[]>(
   typeName: string,
   choices: C,
 ): ArgumentType<C[number]> {
+  const choiceMap: Map<string, string> = choices.reduce((map, choice) => {
+    map.set(choice.toLowerCase(), choice);
+    return map;
+  }, new Map());
   return Object.freeze({
     parse: (raw: string): C[number] => {
-      if (choices.includes(raw)) {
-        return raw;
+      const key = raw.trim().toLowerCase();
+      if (choiceMap.has(key)) {
+        return choiceMap.get(key)!;
       } else {
         throw new Error(
           `expected one of ${

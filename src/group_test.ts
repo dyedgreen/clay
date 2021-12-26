@@ -3,7 +3,7 @@ import { CommandGroup } from "./group.ts";
 import { choice, string } from "./types.ts";
 import { assertEquals } from "https://deno.land/std@0.118.0/testing/asserts.ts";
 
-Deno.test("test basic command groups", () => {
+Deno.test("basic command groups", () => {
   const firstCmd = new Command("First command.")
     .required(choice("NUMBER", ["one", "two", "three"]), "number", {
       flags: ["n", "number"],
