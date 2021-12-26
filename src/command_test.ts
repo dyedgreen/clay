@@ -15,7 +15,7 @@ Deno.test("basic commands", () => {
   assertEquals(result, { firstName: "Peter", name: "Parker", age: 42 });
 });
 
-Deno.test("help output", () => {
+Deno.test("command help output", () => {
   const cmd = new Command("A test command.")
     .required(string, "first")
     .required(string, "second")
@@ -35,6 +35,40 @@ Deno.test("help output", () => {
 
   assertEquals(
     cmd.help(),
+    `A test command.
+
+USAGE:
+\t<first> <second> [OPTIONS]
+
+OPTIONS:
+\t-a, --age <NUMBER>                The age option.
+\t-i, --index <INTEGER> (required)  
+\t-o, --other <STRING>              Other option.
+\t--flag, -f, --a-flag              This is a flag.`,
+  );
+
+  assertEquals(
+    cmd.help(["the", "given", "path"]),
+    `A test command.
+
+USAGE:
+\tthe given path <first> <second> [OPTIONS]
+
+OPTIONS:
+\t-a, --age <NUMBER>                The age option.
+\t-i, --index <INTEGER> (required)  
+\t-o, --other <STRING>              Other option.
+\t--flag, -f, --a-flag              This is a flag.`,
+  );
+
+  let parseHelp = "";
+  try {
+    cmd.parse(["-h"]);
+  } catch (error) {
+    parseHelp = error.message;
+  }
+  assertEquals(
+    parseHelp,
     `A test command.
 
 USAGE:

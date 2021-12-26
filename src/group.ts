@@ -22,7 +22,7 @@ export class CommandGroup<T = Record<never, never>> {
       (max, [name, _]) => Math.max(max, name.length),
       0,
     );
-    return `COMMANDS:\n\n${
+    return `COMMANDS:\n${
       pairs.map(([name, command]) =>
         `\t${leftPad(name, maxLength)}  ${command.description}`
       ).join("\n")
@@ -54,9 +54,10 @@ export class CommandGroup<T = Record<never, never>> {
         [args[skip]]: this._commands[args[skip]].parse(args, skip + 1),
       } as unknown as T;
     } else {
-      const isHelp = Deno.args.some((arg, idx) => {
+      const isHelp = args.some((arg, idx) => {
         if (idx < skip) return false;
-        return arg === "-h" || arg === "--help";
+        const argClean = arg.trim().toLowerCase();
+        return argClean === "-h" || argClean === "--help";
       });
       if (isHelp) {
         throw new HelpError(this.help(args.slice(0, skip)));

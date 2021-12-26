@@ -1,24 +1,59 @@
 import { Command } from "./command.ts";
 import { CommandGroup } from "./group.ts";
-import { choice, string } from "./types.ts";
+import { string } from "./types.ts";
 import { assertEquals } from "https://deno.land/std@0.118.0/testing/asserts.ts";
 
+const cmd = new Command("Test child.").required(string, "test");
+
 Deno.test("basic command groups", () => {
-  const firstCmd = new Command("First command.")
-    .required(choice("NUMBER", ["one", "two", "three"]), "number", {
-      flags: ["n", "number"],
-    });
-  const secondCmd = new Command("Second command.")
-    .required(string, "name", {
-      flags: ["n", "name"],
-    });
   const group = new CommandGroup("A test group.")
-    .subcommand("first", firstCmd)
-    .subcommand("second", secondCmd);
+    .subcommand("first", cmd)
+    .subcommand("second", cmd);
 
-  const firstResult = group.parse(["first", "-n", "two"]);
-  assertEquals(firstResult, { first: { number: "two" } });
+  const firstResult = group.parse(["first", "test"]);
+  assertEquals(firstResult, { first: { test: "test" } });
 
-  const secondResult = group.parse(["second", "--name", "Peter"]);
-  assertEquals(secondResult, { second: { name: "Peter" } });
+  const secondResult = group.parse(["second", "test"]);
+  assertEquals(secondResult, { second: { test: "test" } });
+});
+
+Deno.test("command group help output", () => {
+  const innerGroup = new CommandGroup("Inner group.")
+    .subcommand("first", cmd)
+    .subcommand("second", cmd);
+  const group = new CommandGroup("A test group.")
+    .subcommand("first", cmd)
+    .subcommand("second", cmd)
+    .subcommand("third", innerGroup);
+
+  assertEquals(
+    group.help(),
+    `A test group.
+
+USAGE:
+\t<command>
+
+COMMANDS:
+\tfirst   Test child.
+\tsecond  Test child.
+\tthird   Inner group.`,
+  );
+
+  let innerHelp = "";
+  try {
+    group.parse(["third", "-h"]);
+  } catch (error) {
+    innerHelp = error.message;
+  }
+  assertEquals(
+    innerHelp,
+    `Inner group.
+
+USAGE:
+\tthird <command>
+
+COMMANDS:
+\tfirst   Test child.
+\tsecond  Test child.`,
+  );
 });
