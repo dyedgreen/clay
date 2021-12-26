@@ -55,7 +55,6 @@ const destroy = new Command("Destroy a given resource.")
     description: "Confirm this action.",
   });
 
-// `Command`s can be collected into `CommandGroup`s.
 const manage = new CommandGroup("Manage imaginary resources.")
   .subcommand("create", create)
   .subcommand("destroy", destroy);
