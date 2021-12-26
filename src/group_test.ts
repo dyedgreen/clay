@@ -8,7 +8,7 @@ import {
 
 const cmd = new Command("Test child.").required(string, "test");
 
-Deno.test("basic command groups", () => {
+Deno.test("command groups work", () => {
   const group = new CommandGroup("A test group.")
     .subcommand("first", cmd)
     .subcommand("second", cmd);
@@ -20,7 +20,7 @@ Deno.test("basic command groups", () => {
   assertEquals(secondResult, { second: { test: "test" } });
 });
 
-Deno.test("basic command group errors", () => {
+Deno.test("command group errors work", () => {
   const group = new CommandGroup("A test group.")
     .subcommand("first", cmd)
     .subcommand("second", cmd);

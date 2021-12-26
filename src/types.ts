@@ -75,13 +75,13 @@ export const boolean: ArgumentType<boolean> = Object.freeze({
 /**
  * Returns a value from a provided set of options, if the CLI argument
  * matches. Options are matched case-insensitively e.g.
- * `choices("CONFIRM", ["yes", "no"])` matches both `yes` and `Yes`.
+ * `choice("CONFIRM", ["yes", "no"])` matches both `yes` and `Yes`.
  *
  * This always returns exact string provided in `choices`, e.g.
- * `choices("CONFIRM", ["yes", "no"])`, matching on `Yes` would return
+ * `choice("CONFIRM", ["yes", "no"])`, matching on `Yes` would return
  * `yes`.
  */
-export const choice = function <C extends string[]>(
+export function choice<C extends string[]>(
   typeName: string,
   choices: C,
 ): ArgumentType<C[number]> {
@@ -90,7 +90,7 @@ export const choice = function <C extends string[]>(
     return map;
   }, new Map());
   return Object.freeze({
-    parse: (raw: string): C[number] => {
+    parse: (raw) => {
       const key = raw.trim().toLowerCase();
       if (choiceMap.has(key)) {
         return choiceMap.get(key)!;
@@ -104,4 +104,4 @@ export const choice = function <C extends string[]>(
     },
     typeName: typeName.toUpperCase(),
   });
-};
+}

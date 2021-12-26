@@ -27,6 +27,24 @@ Deno.test("basic command errors", () => {
   });
 });
 
+Deno.test("can not have multiple anonymous optional arguments", () => {
+  assertThrows(() =>
+    new Command("A test command.").optional(string, "first").optional(
+      string,
+      "second",
+    )
+  );
+});
+
+Deno.test("can not have anonymous required argument after anonymous optional argument", () => {
+  assertThrows(() =>
+    new Command("A test command.").optional(string, "first").required(
+      string,
+      "second",
+    )
+  );
+});
+
 Deno.test("required arguments work as expected", () => {
   const cmd = new Command("A test command.")
     .required(string, "a")
