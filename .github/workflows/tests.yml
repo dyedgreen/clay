@@ -1,33 +1,21 @@
-name: tests
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Setup repo
-        uses: actions/checkout@v2
+    - name: Install Deno
+      run: curl -fsSL https://deno.land/x/install/install.sh | sh
+    - uses: actions/checkout@v1
+    
+    - name: Verify formatting
+      run: /home/runner/.deno/bin/deno fmt --check
 
-      - name: Setup Deno
-        # uses: denoland/setup-deno@v1
-        uses: denoland/setup-deno@004814556e37c54a2f6e31384c9e18e9833173669
-        with:
-          deno-version: v1.x
+    - name: Run linter
+      run: /home/runner/.deno/bin/deno lint
 
-      - name: Verify formatting
-        run: deno fmt --check
+    - name: Run tests (stable)
+      run: /home/runner/.deno/bin/deno test
 
-      - name: Run linter
-        run: deno lint
-
-      - name: Run tests (stable)
-        run: deno test
-
-      - name: Run tests (unstable)
-        run: deno test --unstable
+    - name: Run tests (unstable)
+      run: /home/runner/.deno/bin/deno test --unstable
