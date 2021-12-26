@@ -7,14 +7,22 @@ function escapeRawArgument(string: string) {
   return `'${string.replaceAll("'", "\\'")}'`;
 }
 
+/**
+ * Returns the provided CLI argument as a `string` without
+ * performing any validation.
+ */
 export const string: ArgumentType<string> = Object.freeze({
   parse: (raw: string): string => raw,
   typeName: "STRING",
 });
 
+/**
+ * Returns the provided CLI argument as a `number`.
+ * `Infinity` and `Nan` are not valid numbers.
+ */
 export const number: ArgumentType<number> = Object.freeze({
   parse: (raw: string): number => {
-    const value = raw.trim();
+    const value = raw.trim().toLowerCase();
     const num = Number(value);
     if (value.length > 0 && !Number.isNaN(num)) {
       return num;
@@ -25,6 +33,10 @@ export const number: ArgumentType<number> = Object.freeze({
   typeName: "NUMBER",
 });
 
+/**
+ * Returns the provided CLI argument as a `number`, if it is an
+ * integer.
+ */
 export const integer: ArgumentType<number> = Object.freeze({
   parse: (raw: string): number => {
     const value = raw.trim();
@@ -39,6 +51,11 @@ export const integer: ArgumentType<number> = Object.freeze({
   typeName: "INTEGER",
 });
 
+/**
+ * Return the provided CLI argument as a `boolean`. Case-insensitive
+ * versions of `yes`/`no`, `true`/`false`, `y`/`n`, `1`/`0` are all
+ * accepted.
+ */
 export const boolean: ArgumentType<boolean> = Object.freeze({
   parse: (raw: string): boolean => {
     const truthy = ["yes", "true", "y", "1"];
@@ -55,6 +72,15 @@ export const boolean: ArgumentType<boolean> = Object.freeze({
   typeName: "BOOLEAN",
 });
 
+/**
+ * Returns a value from a provided set of options, if the CLI argument
+ * matches. Options are matched case-insensitively e.g.
+ * `choices("CONFIRM", ["yes", "no"])` matches both `yes` and `Yes`.
+ *
+ * This always returns exact string provided in `choices`, e.g.
+ * `choices("CONFIRM", ["yes", "no"])`, matching on `Yes` would return
+ * `yes`.
+ */
 export const choice = function <C extends string[]>(
   typeName: string,
   choices: C,

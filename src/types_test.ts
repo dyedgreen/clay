@@ -53,6 +53,7 @@ Deno.test("number type", () => {
     "4+6",
     "345f",
     "  345345.34w  ",
+    "Infinity",
   ];
 
   for (const [raw, value] of lowerAndUpperCase(addPadding(good))) {
