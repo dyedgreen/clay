@@ -42,7 +42,7 @@ export const integer: ArgumentType<number> = Object.freeze({
     const value = raw.trim();
     if (/^[-+]?\d+$/.test(value)) {
       const number = Number(value);
-      if (number === -0) return 0;
+      if (Object.is(number, -0)) return 0;
       else return number;
     } else {
       throw new Error(`${escapeRawArgument(raw)} is not an integer`);
