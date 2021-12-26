@@ -162,7 +162,7 @@ export class Command<T = Record<never, never>> {
    * Add a required argument and return the modified
    * `Command`.
    *
-   * The parsed argument will present at key `name`
+   * The parsed argument will be present at key `name`
    * in the object returned from `parse` or `run`.
    *
    * # Example
@@ -208,7 +208,7 @@ export class Command<T = Record<never, never>> {
    * Add an optional argument and return the modified
    * `Command`.
    *
-   * If the optional argument was passed, it will present
+   * If the optional argument was passed, it will be present
    * at key `name` in the object returned from `parse` or `run`.
    * Otherwise, the object will not contain the key `name`.
    *
