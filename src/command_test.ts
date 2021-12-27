@@ -27,6 +27,22 @@ Deno.test("basic command errors", () => {
   });
 });
 
+Deno.test("help messages shows closest flag", () => {
+  const cmd = new Command("A test command.")
+    .required(string, "test", { flags: ["test"] });
+
+  let message = "";
+  try {
+    cmd.parse(["--tst", "test"]);
+  } catch (error) {
+    message = error.message;
+  }
+  assertEquals(
+    message,
+    "Unknown flag '--tst'\n\nHELP:\n\tDid you mean --test?",
+  );
+});
+
 Deno.test("can not have multiple anonymous optional arguments", () => {
   assertThrows(() =>
     new Command("A test command.").optional(string, "first").optional(
