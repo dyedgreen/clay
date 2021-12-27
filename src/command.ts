@@ -1,6 +1,7 @@
 import type { ArgumentType } from "./types.ts";
 import { ArgumentError, HelpError } from "./error.ts";
 import { leftPad } from "./fmt.ts";
+import { closest } from "./distance.ts";
 
 export interface ArgumentOptions {
   /**
@@ -139,7 +140,13 @@ export class Command<T = Record<never, never>> {
   }
 
   private _fmtUnknownFlag(arg: string): string {
-    return `Unknown flag '${arg.replaceAll("'", "\\'")}'`;
+    const unknownFlag = `Unknown flag '${arg.replaceAll("'", "\\'")}'`;
+    const closestFlag = closest(arg, this._allFlags);
+    if (closestFlag) {
+      return `${unknownFlag}\n\nHELP:\n\tDid you mean ${closestFlag}?`;
+    } else {
+      return unknownFlag;
+    }
   }
 
   private _normalizeFlags(flags: string[]): string[] {
