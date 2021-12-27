@@ -1,6 +1,7 @@
 import type { Command } from "./command.ts";
 import { ArgumentError, HelpError } from "./error.ts";
 import { leftPad } from "./fmt.ts";
+import { closest } from "./distance.ts";
 
 /**
  * A group of `Command`s.
@@ -34,6 +35,19 @@ export class CommandGroup<T = Record<never, never>> {
         `\t${leftPad(name, maxLength)}  ${command.description}`
       ).join("\n")
     }`;
+  }
+
+  private _fmtUnknownCommand(arg: string): string {
+    const unknownCommand = `Unknown command '${arg.replaceAll("'", "\\'")}'`;
+    const closestCommand = closest(
+      arg,
+      Object.getOwnPropertyNames(this._commands),
+    );
+    if (closestCommand) {
+      return `${unknownCommand}\n\nHELP:\n\tDid you mean ${closestCommand}?`;
+    } else {
+      return unknownCommand;
+    }
   }
 
   /**
@@ -86,9 +100,7 @@ export class CommandGroup<T = Record<never, never>> {
       if (isHelp) {
         throw new HelpError(this.help(args.slice(0, skip)));
       } else {
-        throw new ArgumentError(
-          `Unknown command ${args[skip].replaceAll("'", "\\'")}`,
-        );
+        throw new ArgumentError(this._fmtUnknownCommand(args[skip]));
       }
     }
   }

@@ -27,7 +27,7 @@ Deno.test("basic command errors", () => {
   });
 });
 
-Deno.test("help messages shows closest flag", () => {
+Deno.test("command help messages shows closest flag", () => {
   const cmd = new Command("A test command.")
     .required(string, "test", { flags: ["test"] });
 

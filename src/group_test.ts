@@ -32,6 +32,22 @@ Deno.test("command group errors work", () => {
   assertThrows(() => group.parse(["first"]));
 });
 
+Deno.test("command group help messages shows closest subcommand", () => {
+  const group = new CommandGroup("A test command.")
+    .subcommand("test", cmd);
+
+  let message = "";
+  try {
+    group.parse(["tst"]);
+  } catch (error) {
+    message = error.message;
+  }
+  assertEquals(
+    message,
+    "Unknown command 'tst'\n\nHELP:\n\tDid you mean test?",
+  );
+});
+
 Deno.test("command group help output", () => {
   const innerGroup = new CommandGroup("Inner group.")
     .subcommand("first", cmd)

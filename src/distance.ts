@@ -10,7 +10,10 @@ function union<T>(a: Set<T>, b: Set<T>): number {
   return union;
 }
 
-export function closest(string: string, options: Set<string>): string | null {
+export function closest(
+  string: string,
+  options: Iterable<string>,
+): string | null {
   const stringSet = new Set(string);
   let bestItem = null;
   let bestScore = 0;
