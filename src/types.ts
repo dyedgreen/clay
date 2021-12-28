@@ -19,6 +19,19 @@ export interface ArgumentType<T> {
   readonly typeName: string;
 }
 
+const ISO_8601 =
+  /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(([+-]\d\d:\d\d)|Z)?$/i;
+const LOCAL_DATE_FORMATS = [
+  /^(?<year>\d{4})-(?<month>\d\d?)-(?<day>\d\d?)(\s+(?<hours>\d\d?):(?<minutes>\d\d)(:(?<seconds>\d\d))?)?$/i,
+  /^(?<year>\d{4}).(?<month>\d\d?).(?<day>\d\d?)(\s+(?<hours>\d\d?):(?<minutes>\d\d)(:(?<seconds>\d\d))?)?$/i,
+  /^(?<year>\d{4}) (?<month>\d\d?) (?<day>\d\d?)(\s+(?<hours>\d\d?):(?<minutes>\d\d)(:(?<seconds>\d\d))?)?$/i,
+  /^(?<year>\d{4})\/(?<month>\d\d?)\/(?<day>\d\d?)(\s+(?<hours>\d\d?):(?<minutes>\d\d)(:(?<seconds>\d\d))?)?$/i,
+  /^(?<hours>\d\d?):(?<minutes>\d\d)(:(?<seconds>\d\d))?\s+(?<year>\d{4})-(?<month>\d\d?)-(?<day>\d\d?)$/i,
+  /^(?<hours>\d\d?):(?<minutes>\d\d)(:(?<seconds>\d\d))?\s+(?<year>\d{4}).(?<month>\d\d?).(?<day>\d\d?)$/i,
+  /^(?<hours>\d\d?):(?<minutes>\d\d)(:(?<seconds>\d\d))?\s+(?<year>\d{4}) (?<month>\d\d?) (?<day>\d\d?)$/i,
+  /^(?<hours>\d\d?):(?<minutes>\d\d)(:(?<seconds>\d\d))?\s+(?<year>\d{4})\/(?<month>\d\d)\/(?<day>\d\d)$/i,
+];
+
 function escapeRawArgument(string: string) {
   return `'${string.replaceAll("'", "\\'")}'`;
 }
@@ -86,6 +99,49 @@ export const boolean: ArgumentType<boolean> = Object.freeze({
     }
   },
   typeName: "BOOLEAN",
+});
+
+/**
+ * Returns the provided CLI argument as a `Date`. This supports local
+ * dates and times, ISO8601 strings, and the special constants `now`
+ * (current time) and `today` (start of current day in local time-zone).
+ */
+export const date: ArgumentType<Date> = Object.freeze({
+  parse: (raw: string): Date => {
+    const trimmed = raw.trim().toLowerCase();
+    if (trimmed.match(ISO_8601)) {
+      return new Date(trimmed);
+    } else if (trimmed === "now") {
+      return new Date();
+    } else if (trimmed === "today") {
+      const date = new Date();
+      date.setHours(0);
+      date.setMinutes(0);
+      date.setSeconds(0);
+      date.setMilliseconds(0);
+      return date;
+    } else {
+      for (const format of LOCAL_DATE_FORMATS) {
+        const match = trimmed.match(format);
+        if (match != null) {
+          const year = parseInt(match.groups!.year);
+          const month = parseInt(match.groups!.month) - 1;
+          if (month < 0 || 11 < month) continue;
+          const day = parseInt(match.groups!.day);
+          if (day < 1 || 31 < day) continue;
+          const hours = parseInt(match.groups!.hours ?? "0");
+          if (hours < 0 || 23 < hours) continue;
+          const minutes = parseInt(match.groups!.minutes ?? "0");
+          if (minutes < 0 || 59 < minutes) continue;
+          const seconds = parseInt(match.groups!.seconds ?? "0");
+          if (seconds < 0 || 59 < seconds) continue;
+          return new Date(year, month, day, hours, minutes, seconds);
+        }
+      }
+      throw new Error(`${escapeRawArgument(raw)} is not a valid date`);
+    }
+  },
+  typeName: "DATE",
 });
 
 /**

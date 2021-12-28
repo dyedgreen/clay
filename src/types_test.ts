@@ -1,5 +1,6 @@
-import { boolean, choice, integer, number, string } from "./types.ts";
+import { boolean, choice, date, integer, number, string } from "./types.ts";
 import {
+  assert,
   assertEquals,
   assertThrows,
 } from "https://deno.land/std@0.118.0/testing/asserts.ts";
@@ -112,6 +113,86 @@ Deno.test("boolean type", () => {
     assertEquals(boolean.parse(raw), value);
   }
   for (const raw of bad) assertThrows(() => boolean.parse(raw));
+});
+
+Deno.test("date type", () => {
+  const dateUTC = (
+    year: number,
+    month: number,
+    day: number,
+    hours: number,
+    minutes: number,
+    seconds: number,
+  ): Date => {
+    const date = new Date();
+    date.setUTCFullYear(year);
+    date.setUTCMonth(month - 1);
+    date.setUTCDate(day);
+    date.setUTCHours(hours);
+    date.setUTCMinutes(minutes);
+    date.setUTCSeconds(seconds);
+    date.setUTCMilliseconds(0);
+    return date;
+  };
+  const dateLocal = (
+    year: number,
+    month: number,
+    day: number,
+    hours: number,
+    minutes: number,
+    seconds: number,
+  ): Date => {
+    const date = new Date();
+    date.setFullYear(year);
+    date.setMonth(month - 1);
+    date.setDate(day);
+    date.setHours(hours);
+    date.setMinutes(minutes);
+    date.setSeconds(seconds);
+    date.setMilliseconds(0);
+    return date;
+  };
+  const good: [string, Date][] = [
+    [
+      "today",
+      new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        new Date().getDate(),
+      ),
+    ],
+    ["1999-11-20T12:00:00Z", dateUTC(1999, 11, 20, 12, 0, 0)],
+    ["2021/12/24", dateLocal(2021, 12, 24, 0, 0, 0)],
+    ["2021.12.24", dateLocal(2021, 12, 24, 0, 0, 0)],
+    ["2021-12-24", dateLocal(2021, 12, 24, 0, 0, 0)],
+    ["2006-1-9", dateLocal(2006, 1, 9, 0, 0, 0)],
+    ["17:32:11 2006-1-9", dateLocal(2006, 1, 9, 17, 32, 11)],
+    ["2006/1/9 17:32", dateLocal(2006, 1, 9, 17, 32, 0)],
+    ["17:32:11   2006-1-9", dateLocal(2006, 1, 9, 17, 32, 11)],
+    ["2012-8-16 6:19", dateLocal(2012, 8, 16, 6, 19, 0)],
+  ];
+  const bad = [
+    "wfwe",
+    "",
+    "   ",
+    "1992/13/09",
+    "18:46",
+    "2021/11/11 25:11:52",
+    "2021/11/11 6:60:52",
+  ];
+
+  // Don't directly compare, since the exact time can change
+  // slightly between the two creations.
+  const now = date.parse("now");
+  assert(
+    Math.abs(now.valueOf() - Date.now()) < 0.01,
+    "now should return current time",
+  );
+
+  for (const [raw, value] of lowerAndUpperCase(addPadding(good))) {
+    assertEquals(date.parse(raw), value);
+  }
+  for (const raw of bad) assertThrows(() => date.parse(raw));
 });
 
 Deno.test("choice type", () => {
