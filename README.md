@@ -1,4 +1,4 @@
-# Clay - Deno Command Line Parser
+# Clay - Deno Command Line Argument Parsing
 
 [![tests](https://github.com/dyedgreen/clay/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/dyedgreen/clay/actions/workflows/tests.yml)
 [![deno doc](https://doc.deno.land/badge.svg)](https://doc.deno.land/https://deno.land/x/clay/mod.ts)
@@ -9,7 +9,15 @@ Easily convert command line arguments to objects. Try the example:
 $ deno run https://deno.land/x/clay/example.ts --help
 ```
 
-## Examples
+## Features
+
+- Type-safe, extensible argument parsing
+- Support for named arguments (passed as `--flags`) and positional arguments
+- Automatically generated help messages (accessible with `-h` or `--help`)
+- Automatically generated error messages, including suggestions for misspelled
+  arguments
+
+## Code Examples
 
 A simple command with two options, one of which is required.
 
@@ -60,4 +68,27 @@ const manage = new CommandGroup("Manage imaginary resources.")
   .subcommand("destroy", destroy);
 
 console.log(manage.run()); // { create?: {}, destroy?: { id: number, confirm: "y"|"yes"|"ok" } }
+```
+
+Defining new parsers for custom types is also possible.
+
+```ts
+type email = string;
+
+const email = {
+  parse: (raw: string): email => {
+    if (/^[a-z0-9-_.]+@[a-z0-9-_.]+$/i.test(raw)) {
+      return raw;
+    } else {
+      throw new Error(
+        `'${raw.replaceAll("'", "\\'")}' is not a recognized email address`,
+      );
+    }
+  },
+  typeName: "EMAIL",
+};
+const cmd = new Command("Example with a custom type.")
+  .required(email, "email");
+
+console.log(cmd.run()); // { email: email }
 ```
